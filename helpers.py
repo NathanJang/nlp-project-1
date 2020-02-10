@@ -41,7 +41,10 @@ class TweetHandler:
     for host in common_hosts:
       if host[1] > (top_mentioned_host * variance_factor):
         found_hosts.append(host[0])
-    return found_hosts
+
+    # todo: better way to do this
+    # hacky but removes any non-names by seeing if their split length is 1
+    return [host for host in found_hosts if len(host.split(' ')) > 1]
 
 
 class IMDBHandler:

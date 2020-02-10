@@ -28,7 +28,7 @@ def get_hosts(year):
 
     imdb_handler = helpers.IMDBHandler()
     names = imdb_handler.get_names(host_tweets, use_imdb_database=False)
-    hosts = tweet_handler.get_most_common_names(names)
+    hosts = tweet_handler.get_most_common_names(names, variance=50)
     return hosts
 
 def get_awards(year):
