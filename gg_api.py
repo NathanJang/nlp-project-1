@@ -2,11 +2,20 @@
 
 import helpers
 import json
+import spacy
+from spacy.tokenizer import Tokenizer
+import en_core_web_sm
+
+
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
 
 yearly_tweets = []
+
+# spacy stuff
+nlp_client = spacy.load('en_core_web_sm')
+nlp_tokenizer = Tokenizer(nlp_client.vocab)
 
 def get_tweets_from_file(year):
     '''Parses a json file of tweets to extract tweet text data.
@@ -29,11 +38,17 @@ def get_hosts(year):
     imdb_handler = helpers.IMDBHandler()
     names = imdb_handler.get_names(host_tweets, use_imdb_database=False)
     hosts = tweet_handler.get_most_common_names(names, variance=50)
+    print(hosts)
     return hosts
 
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
+    official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
+    tweet_handler = helpers.TweetHandler()
+    awards_tweets = tweet_handler.get_awards_tweets(yearly_tweets)
+    # most_common_awards_2 = tweet_handler.get_awards_tweets2(yearly_tweets)
+    awards = tweet_handler.process_awards_tweets(yearly_tweets, awards_tweets, nlp_client, official_awards)
     # Your code here
     return awards
 
@@ -77,6 +92,7 @@ def main():
     year = '2013' # todo
     yearly_tweets = get_tweets_from_file(year)
     get_hosts(year)
+    get_awards(year)
     return
 
 if __name__ == '__main__':
