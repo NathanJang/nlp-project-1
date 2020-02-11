@@ -32,13 +32,15 @@ class TweetHandler:
 
   def get_awards_tweets(self, tweets):
     # todo: function description and check return type
-    regex_matching_pattern = re.compile('Best ([A-z\s-]+)[A-Z][a-z]*[^A-z]')
+    awards_matching_string = 'Best ([A-z\s-]+)[A-Z][a-z]*[^A-z]'
+    other_matching_string = '.*^((?!(goes|but|is)).)*$'
+    regex_matching_pattern = re.compile()
     awards_tweets = []
-    cleaned_tweets = [] #todo: rename
+    cleaned_tweets = []
     for tweet in tweets:
       if regex_matching_pattern.match(tweet):
         awards_tweets.append(regex_matching_pattern.search(tweet).group(0)[:-1])
-    regex_matching_pattern = re.compile('.*^((?!(goes|but|is)).)*$')
+    regex_matching_pattern = re.compile(other_matching_string)
     for tweet in awards_tweets:
       if regex_matching_pattern.match(tweet):
         cleaned_tweets.append(regex_matching_pattern.match(tweet).group(0).lower())
@@ -46,31 +48,30 @@ class TweetHandler:
     return cleaned_tweets
 
   def process_awards_tweets(self, tweets, cleaned_tweets, nlp_client, official_awards):
-    count = Counter(cleaned_tweets)
-    official_awards_tokens = {}
+    awards_len = len(official_awards)
+    matching_intersection_threshold = 3
+    awards_tokens = {}
     award_mapping = {}
+
     for award in official_awards:
         for token in nlp_client(award):
-            if award in official_awards_tokens:
-                official_awards_tokens[award].append(str(token))
-                award_mapping[award] = []
-            else:
-                official_awards_tokens[award] = [str(token)]
+            if award not in awards_tokens:
+                awards_tokens[award] = [str(token)]
                 award_mapping[award] = [award]
+            else:
+              awards_tokens[award].append(str(token))
+              award_mapping[award] = []
 
-    matching_matrix = [[0 for j in range(len(official_awards))] for i in range(len(cleaned_tweets))]
+    matrix = [[0 for j in range(awards_len)] for i in range(len(cleaned_tweets))]
     for i in range(len(cleaned_tweets)):
-        tokens = set()
-        for token in nlp_client(cleaned_tweets[i]):
-            tokens.add(str(token))
-        for j in range(len(official_awards)):
-            award_set = set(official_awards_tokens[official_awards[j]])
-            matching_matrix[i][j] = len(tokens.intersection(award_set))
+        nlp_tokens = set([str(token) for token in nlp_client(cleaned_tweets[i])])
+        for j in range(awards_len):
+            matrix[i][j] = len(nlp_tokens.intersection(set(awards_tokens[official_awards[j]])))
 
-    for i in range(len(matching_matrix)):
-        max_col_index = matching_matrix[i].index(max(matching_matrix[i]))
-        if matching_matrix[i][max_col_index] > 3:
-            award_mapping[official_awards[max_col_index]].append(cleaned_tweets[i])
+    for i in range(len(matrix)):
+        max_index = matrix[i].index(max(matrix[i]))
+        if matrix[i][max_index] > matching_intersection_threshold:
+            award_mapping[official_awards[max_index]].append(cleaned_tweets[i])
 
     return award_mapping
 
