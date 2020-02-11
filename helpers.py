@@ -8,9 +8,9 @@ import imdb
 import re
 from collections import Counter
 
+
 # todo: move or use nlp library stoplist
 stop_list = ['GoldenGlobes', 'Golden', 'Globes', 'Golden Globes', 'RT', 'VanityFair', 'golden', 'globes' '@', 'I', 'we', 'http', '://', '/', 'com', 'Best', 'best', 'Looking', 'Nice', 'Most', 'Pop', 'Hip Hop', 'Rap', 'We', 'Love', 'Awkward','Piece', 'While', 'Boo', 'Yay', 'Congrats', 'And', 'The', 'Gq', 'Refinery29', 'USWeekly', 'TMZ', 'Hollywood', 'Watching', 'Hooray', 'That', 'Yeah', 'Can', 'So', 'And', 'But', 'What', 'NShowBiz', 'She', 'Mejor', 'Did', 'Vanity', 'Fair', 'Drama', 'MotionPicture', 'News', 'Take', 'Before', 'Director', 'Award', 'Movie Award', 'Music Award', 'Best Director', 'Best Actor', 'Best Actress', 'Am', 'Golden Globe', 'Globe', 'Awards', 'It']
-
 
 class TweetHandler:
 
@@ -30,6 +30,51 @@ class TweetHandler:
 
     return host_tweets
 
+  def get_awards_tweets(self, tweets):
+    # todo: function description and check return type
+    awards_matching_string = 'Best ([A-z\s-]+)[A-Z][a-z]*[^A-z]'
+    other_matching_string = '.*^((?!(goes|but|is)).)*$'
+    regex_matching_pattern = re.compile()
+    awards_tweets = []
+    cleaned_tweets = []
+    for tweet in tweets:
+      if regex_matching_pattern.match(tweet):
+        awards_tweets.append(regex_matching_pattern.search(tweet).group(0)[:-1])
+    regex_matching_pattern = re.compile(other_matching_string)
+    for tweet in awards_tweets:
+      if regex_matching_pattern.match(tweet):
+        cleaned_tweets.append(regex_matching_pattern.match(tweet).group(0).lower())
+
+    return cleaned_tweets
+
+  def process_awards_tweets(self, tweets, cleaned_tweets, nlp_client, official_awards):
+    awards_len = len(official_awards)
+    matching_intersection_threshold = 3
+    awards_tokens = {}
+    award_mapping = {}
+
+    for award in official_awards:
+        for token in nlp_client(award):
+            if award not in awards_tokens:
+                awards_tokens[award] = [str(token)]
+                award_mapping[award] = [award]
+            else:
+              awards_tokens[award].append(str(token))
+              award_mapping[award] = []
+
+    matrix = [[0 for j in range(awards_len)] for i in range(len(cleaned_tweets))]
+    for i in range(len(cleaned_tweets)):
+        nlp_tokens = set([str(token) for token in nlp_client(cleaned_tweets[i])])
+        for j in range(awards_len):
+            matrix[i][j] = len(nlp_tokens.intersection(set(awards_tokens[official_awards[j]])))
+
+    for i in range(len(matrix)):
+        max_index = matrix[i].index(max(matrix[i]))
+        if matrix[i][max_index] > matching_intersection_threshold:
+            award_mapping[official_awards[max_index]].append(cleaned_tweets[i])
+
+    return award_mapping
+
   # todo: move?
   def get_most_common_names(self, names, variance=25):
     variance_factor = variance/100
@@ -45,6 +90,7 @@ class TweetHandler:
     # todo: better way to do this
     # hacky but removes any non-names by seeing if their split length is 1
     return [host for host in found_hosts if len(host.split(' ')) > 1]
+
 
 
 class IMDBHandler:

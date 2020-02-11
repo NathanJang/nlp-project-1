@@ -47,34 +47,9 @@ def get_awards(year):
     of this function or what it returns.'''
     official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
     tweet_handler = helpers.TweetHandler()
-    most_common_awards = tweet_handler.get_awards_tweets(yearly_tweets)
-    scraped_awards = [award[0] for award in most_common_awards]
-    # todo change up
-    official_awards_tokens = {}
-    award_mapping = {}
-    for award in official_awards:
-        for token in nlp_client(award):
-            if award in official_awards_tokens:
-                official_awards_tokens[award].append(str(token))
-                award_mapping[award] = []
-            else:
-                official_awards_tokens[award] = [str(token)]
-                award_mapping[award] = [award]
-
-    matching_matrix = [[0 for j in range(len(official_awards))] for i in range(len(unofficial_awards))]
-    for i in range(len(scraped_awards)):
-        tokens = set()
-        for token in nlp_client(scraped_awards[i]):
-            tokens.add(str(token))
-        for j in range(len(official_awards)):
-            award_set = set(official_awards_tokens[official_awards[j]])
-            matching_matrix[i][j] = len(tokens.intersection(award_set))
-
-    for i in range(len(matching_matrix)):
-        max_col_index = matching_matrix[i].index(max(matching_matrix[i]))
-        if matching_matrix[i][max_col_index] > 3:
-            award_mapping[official_awards[max_col_index]].append(scraped_awards[i])
-
+    awards_tweets = tweet_handler.get_awards_tweets(yearly_tweets)
+    # most_common_awards_2 = tweet_handler.get_awards_tweets2(yearly_tweets)
+    awards = tweet_handler.process_awards_tweets(yearly_tweets, awards_tweets, nlp_client, official_awards)
     # Your code here
     return []
 
