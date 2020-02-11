@@ -48,10 +48,9 @@ def get_awards(year):
     official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
     tweet_handler = helpers.TweetHandler()
     awards_tweets = tweet_handler.get_awards_tweets(yearly_tweets)
-    # most_common_awards_2 = tweet_handler.get_awards_tweets2(yearly_tweets)
     awards = tweet_handler.process_awards_tweets(yearly_tweets, awards_tweets, nlp_client, official_awards)
-    # Your code here
-    return []
+    # todo: split awards from awards mapping
+    return awards
 
 def get_nominees(year):
     '''Nominees is a dictionary with the hard coded award
