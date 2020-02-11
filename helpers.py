@@ -34,7 +34,7 @@ class TweetHandler:
     # todo: function description and check return type
     awards_matching_string = 'Best ([A-z\s-]+)[A-Z][a-z]*[^A-z]'
     other_matching_string = '.*^((?!(goes|but|is)).)*$'
-    regex_matching_pattern = re.compile()
+    regex_matching_pattern = re.compile(awards_matching_string)
     awards_tweets = []
     cleaned_tweets = []
     for tweet in tweets:
@@ -53,6 +53,7 @@ class TweetHandler:
     awards_tokens = {}
     award_mapping = {}
 
+    # initialize a mapping for awards and their respective tokens for titles
     for award in official_awards:
         for token in nlp_client(award):
             if award not in awards_tokens:
@@ -61,21 +62,23 @@ class TweetHandler:
             else:
               awards_tokens[award].append(str(token))
               award_mapping[award] = []
-
+    # create a matrix to identify the official awards so we cna compare to awards found in our tweets
     matrix = [[0 for j in range(awards_len)] for i in range(len(cleaned_tweets))]
     for i in range(len(cleaned_tweets)):
+        # get tokens for the cleaned tweets that have an award in them
         nlp_tokens = set([str(token) for token in nlp_client(cleaned_tweets[i])])
         for j in range(awards_len):
+            # mark the intersection between the tokens of official awards and our tweets
             matrix[i][j] = len(nlp_tokens.intersection(set(awards_tokens[official_awards[j]])))
 
     for i in range(len(matrix)):
+        # append the highest scored intersections in our matching matrix between offical awards and out found awards
         max_index = matrix[i].index(max(matrix[i]))
         if matrix[i][max_index] > matching_intersection_threshold:
             award_mapping[official_awards[max_index]].append(cleaned_tweets[i])
 
     return award_mapping
 
-  # todo: move?
   def get_most_common_names(self, names, variance=25):
     variance_factor = variance/100
     found_hosts = []
@@ -90,7 +93,6 @@ class TweetHandler:
     # todo: better way to do this
     # hacky but removes any non-names by seeing if their split length is 1
     return [host for host in found_hosts if len(host.split(' ')) > 1]
-
 
 
 class IMDBHandler:
