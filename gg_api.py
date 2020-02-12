@@ -49,7 +49,6 @@ def get_hosts(year):
     host_tweets = tweet_handler.get_host_tweets(YEARLY_TWEETS)
     names = imdb_handler.get_names(host_tweets, use_imdb_database=False)
     hosts = tweet_handler.get_most_common_names(names, variance=50)
-    print(hosts)
     RESULTS['hosts'] = hosts
     return hosts
 
@@ -71,7 +70,6 @@ def get_nominees(year):
     global RESULTS
     nominees = {}
     stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter', 'goldenglobes']
-    tweet_handler = helpers.TweetHandler()
     nominee_tweets = tweet_handler.get_nominee_tweets(YEARLY_TWEETS)
     award_mapping = tweet_handler.process_awards_tweets([], nominee_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
@@ -109,7 +107,10 @@ def get_winner(year):
     global RESULTS
     winners = {}
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
-        winners[award] = RESULTS['nominees'][award][0]
+        try:
+            winners[award] = RESULTS['nominees'][award][0]
+        except IndexError:
+            pass
     RESULTS['winners'] = winners
     return winners
 
@@ -117,19 +118,39 @@ def get_presenters(year):
     '''Presenters is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
-    official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
+    global RESULTS
 
     found_presenters = {}
     presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
 
-    for award in official_awards:
+    for award in CURRENT_YEAR_OFFICIAL_AWARDS:
+        awards_tweets = []
         for tweet in YEARLY_TWEETS:
+            lower_tweet = tweet.lower()
             for a in AWARD_MAPPING[award]:
                 match = None
-                if a.lower() in tweet.lower():
+                if a.lower() in lower_tweet:
                     match = presenter_pattern.search(tweet)
+                try:
+                    contains_winner = RESULTS['nominees'][award][0].lower() in lower_tweet
+                    if contains_winner:
+                        match = presenter_pattern.search(tweet)
+                except (KeyError, IndexError) as e:
+                    # print('Came accross key error', e)
+                    pass
 
-    return presenters
+                if match:
+                    awards_tweets.append(tweet[0:match.span()[1]])
+
+            presenter_list = tweet_tokenizer.get_presenters(awards_tweets, award, RESULTS['nominees'])
+            presenter_counter = Counter(presenter_list)
+            if len(presenter_counter.most_common(1)):
+                found_presenters[award] = [pres[0] for pres in presenter_counter.most_common(2) if pres]
+            else:
+                found_presenters[award] = ['_pre_'] # todo: what????
+
+    RESULTS['presenters'] = found_presenters
+    return found_presenters
 
 def pre_ceremony():
     '''This function loads/fetches/processes any data your program
@@ -159,6 +180,8 @@ def main():
     get_hosts(year)
     get_awards(year)
     get_nominees(year)
+    get_winner(year)
+    get_presenters(year)
     return
 
 if __name__ == '__main__':
