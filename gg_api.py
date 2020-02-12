@@ -19,7 +19,7 @@ AWARD_MAPPING = {}
 __predicted_nominees = {}
 
 # dictionary with all of our located values
-found = {}
+RESULTS = {}
 
 # spacy stuff
 nlp_client = spacy.load('en_core_web_sm')
@@ -46,10 +46,12 @@ def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
+    global RESULTS
     host_tweets = tweet_handler.get_host_tweets(YEARLY_TWEETS)
     names = imdb_handler.get_names(host_tweets, use_imdb_database=False)
     hosts = tweet_handler.get_most_common_names(names, variance=50)
     print(hosts)
+    RESULTS['hosts'] = hosts
     return hosts
 
 def get_awards(year):
@@ -101,12 +103,15 @@ def get_nominees(year):
     return nominees
 
 
-
 def get_winner(year):
     '''Winners is a dictionary with the hard coded award
     names as keys, and each entry containing a single string.
     Do NOT change the name of this function or what it returns.'''
-    # Your code here
+    global RESULTS
+    winners = {}
+    for award in CURRENT_YEAR_OFFICIAL_AWARDS:
+        winners[award] = __predicted_nominees[award][0]
+    RESULTS['winners'] = winners
     return winners
 
 def get_presenters(year):
@@ -114,7 +119,7 @@ def get_presenters(year):
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
     official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
-    
+
     found_presenters = {}
     presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
 
