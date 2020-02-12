@@ -193,31 +193,32 @@ class ResultsHandler:
     return json_output
 
 
-class TweetTokenizor():
-  def __init__(self, nlp_client, nlp_tokenizer, yearly_tweets):
+class TweetTokenizer:
+  def __init__(self, nlp_client, nlp_tokenizer):
     self.patterns = {'name': '[A-Z][a-z]*\s[\w]+'}
+    self.keywords = {'ceremony': ["#", "goldenglobes", "golden", "globes", "#goldenglobes"],
+                     'category': {"PERSON": ["actor", "actress", "director", "cecil"]}}
     self.stopwords = ['this year', 'tonight']
     self.nlp = nlp_client
     self.nlp_tokenizer = nlp_tokenizer
     self.award_tokens = set()
-    self.yearly_tweets = yearly_tweets
 
   def add_tokens_from_awards(self, official_awards):
     for official_award in official_awards:
       for tok in self.nlp_tokenizer(official_award):
         self.award_tokens.add(str(tok))
 
-  def add_token_from_keywords(self, keywords):
-    for keyword in keywords:
+  def add_tokens_from_keywords(self):
+    for keyword in self.keywords:
       self.award_tokens.add(keyword)
 
-  def get_relevant_words(self, tweets, type):
+  def get_relevant_words(self, tweets, type, yearly_tweets):
     words = {}
-    name_pattern = re.compile('[A-Z][a-z]*\s[\w]+')
+    name_pattern = re.compile(self.patterns['name'])
     for tweet in tweets:
-      if self.yearly_tweets[tweet] is None:
-        self.yearly_tweets[tweet] = self.nlp(tweet).ents
-      for ent in self.yearly_tweets[tweet]:
+      if yearly_tweets[tweet] is None:
+        yearly_tweets[tweet] = self.nlp(tweet).ents
+      for ent in yearly_tweets[tweet]:
         if ent.label_ in ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']:
           continue
         cleaned_entity = ent.text.strip()

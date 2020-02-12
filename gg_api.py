@@ -12,11 +12,15 @@ import re
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
 
+current_year_awards = []
 yearly_tweets = []
+award_mapping = {}
+found_nominees = {}
 
 # spacy stuff
 nlp_client = spacy.load('en_core_web_sm')
 nlp_tokenizer = Tokenizer(nlp_client.vocab)
+tweet_tokenizer = helpers.TweetTokenizer(nlp_client, nlp_tokenizer)
 
 def get_tweets_from_file(year):
     '''Parses a json file of tweets to extract tweet text data.
@@ -45,41 +49,20 @@ def get_hosts(year):
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
-    official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
+    global award_mapping
     tweet_handler = helpers.TweetHandler()
     awards_tweets = tweet_handler.get_awards_tweets(yearly_tweets)
-    awards = tweet_handler.process_awards_tweets(yearly_tweets, awards_tweets, nlp_client, official_awards)
+    awards = tweet_handler.process_awards_tweets(yearly_tweets, awards_tweets, nlp_client, current_year_awards)
+    award_mapping = awards
     # todo: split awards from awards mapping
     return awards
 
 def get_nominees(year):
-    '''Nominees is a dictionary with the hard coded award
+    """Nominees is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change
-    the name of this function or what it returns.'''
-    award_to_nominee_mapping = { award: [] for award in awards }
-    awards = OFFICIAL_AWARDS_1315 if year == '2013' or year == '2015' else OFFICIAL_AWARDS_1819
-    nomination_keywords = set(['nominates', 'nominating', 'nominees', 'nominee', 'nominated'])
-    stopwords = set(['grammy', 'though', 'someone', 'however', 'life', 'a', 'magazine', 'film', 'so', 'hooraysupporting', 'best', 'tmz', 'people', 'picture', 'although', 'tune', 'she', 'because', 'eating', 'that', 'newz', 'all', 'vanityfair', 'anyway', 'actress', 'interesting', 'score', 'comedy', 'yay', 'netflix', 'cbs', 'fashion', 'not', 'the', 'and', 'oscars', 'better', 'how', 'cnn', 'he', 'has', 'music', 'oscar', 'mc', 'movie', 'good', 'season', 'congrats', 'television', 'nshowbiz', 'song', 'drinking', 'actor', 'mejor', 'drink', 'drama', 'this', 'fair', 'hooray', 'should'])
+    the name of this function or what it returns.
+    """
 
-    # filter tweets relevant to nominations
-    nomination_tweets = [
-        tweet
-        for tweet in get_tweets_from_file(year)
-        if any(keyword in re.sub('[^\w]', ' ', tweet).lower().split() for keyword in nomination_keywords)
-    ]
-    for award in awards:
-        people_name_counts = Counter()
-        ih = helpers.IMDBHandler()
-        for tweet in nomination_tweets:
-            people_names = [
-                name.lower()
-                for name in ih.get_names([tweet], False)
-                if name.lower() not in stopwords
-            ]
-            people_name_counts.update(people_names)
-        award_to_nominee_mapping[award] = [person_name for person_name, _ in people_name_counts.most_common(5)]
-
-    return nominees
 
 def get_winner(year):
     '''Winners is a dictionary with the hard coded award
@@ -98,9 +81,13 @@ def get_presenters(year):
     presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
 
     for award in official_awards:
+        for tweet in yearly_tweets:
+            for a in award_mapping[award]:
+                match = None
+                if a.lower() in tweet.lower():
+                    match = presenter_pattern.search(tweet)
 
 
-    # Your code here
     return presenters
 
 def pre_ceremony():
@@ -118,9 +105,16 @@ def main():
     and then run gg_api.main(). This is the second thing the TA will
     run when grading. Do NOT change the name of this function or
     what it returns.'''
-    global yearly_tweets
+    global yearly_tweets, current_year_awards
     year = '2013' # todo
+    current_year_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
     yearly_tweets = get_tweets_from_file(year)
+
+    # todo: move this, maybe into nominations?
+    # add awards to tokenizer
+    tweet_tokenizer.add_tokens_from_awards(current_year_awards)
+    tweet_tokenizer.add_tokens_from_keywords()
+
     get_hosts(year)
     get_awards(year)
     return
