@@ -57,29 +57,73 @@ def get_nominees(year):
     '''Nominees is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change
     the name of this function or what it returns.'''
-    award_to_nominee_mapping = { award: [] for award in awards }
-    awards = OFFICIAL_AWARDS_1315 if year == '2013' or year == '2015' else OFFICIAL_AWARDS_1819
-    nomination_keywords = set(['nominates', 'nominating', 'nominees', 'nominee', 'nominated'])
-    stopwords = set(['grammy', 'though', 'someone', 'however', 'life', 'a', 'magazine', 'film', 'so', 'hooraysupporting', 'best', 'tmz', 'people', 'picture', 'although', 'tune', 'she', 'because', 'eating', 'that', 'newz', 'all', 'vanityfair', 'anyway', 'actress', 'interesting', 'score', 'comedy', 'yay', 'netflix', 'cbs', 'fashion', 'not', 'the', 'and', 'oscars', 'better', 'how', 'cnn', 'he', 'has', 'music', 'oscar', 'mc', 'movie', 'good', 'season', 'congrats', 'television', 'nshowbiz', 'song', 'drinking', 'actor', 'mejor', 'drink', 'drama', 'this', 'fair', 'hooray', 'should'])
+    global OFFICIAL_AWARDS
+    if year == "2013" or year == "2015":
+        OFFICIAL_AWARDS = OFFICIAL_AWARDS_1315
+    else:
+        OFFICIAL_AWARDS = OFFICIAL_AWARDS_1819
 
-    # filter tweets relevant to nominations
-    nomination_tweets = [
-        tweet
-        for tweet in get_tweets_from_file(year)
-        if any(keyword in re.sub('[^\w]', ' ', tweet).lower().split() for keyword in nomination_keywords)
-    ]
-    for award in awards:
-        people_name_counts = Counter()
-        ih = helpers.IMDBHandler()
-        for tweet in nomination_tweets:
-            people_names = [
-                name.lower()
-                for name in ih.get_names([tweet], False)
-                if name.lower() not in stopwords
-            ]
-            people_name_counts.update(people_names)
-        award_to_nominee_mapping[award] = [person_name for person_name, _ in people_name_counts.most_common(5)]
+    global __predicted_nominees
+    nominees = {}
+    currentyr = str(int(year) - 1)
+    stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter']
+    tweet_handler = helpers.TweetHandler()
+    award_mapping = tweet_handler.process_awards_tweets([], yearly_tweets, nlp_client, OFFICIAL_AWARDS)
+    for award in OFFICIAL_AWARDS:
+        print("Searching for nominees for award %s in year %s" % (award, year))
+        # if award needs a person as a result (actor/actress/director/etc)
+        type_of_award = ""
+        cut = 0.15
+        if "actor" in award or "actress" in award or "director" in award or "cecil" in award:
+            type_of_award = "name"
+            cut = 0.3
+        # reduce to tweets about the desired award
+        relevant_tweets = []
+        for tweet in yearly_tweets:
+            adder = False
+            for match in award_mapping[award]:
+                if match.lower() in tweet.lower() or match.lower()[0:int(len(match.lower()) / 2)] in tweet.lower():
+                    adder = True
+            if adder:
+                relevant_tweets.append(tweet)
+        potential_nominees = {}
+        uncleaned_dict = {}
+        if type_of_award == "name":
+            uncleaned_dict = tokenize(relevant_tweets, 'PERSON', year)
+        else:
+            uncleaned_dict = tokenize(relevant_tweets, 'WORK_OF_ART', year)
 
+        for item in uncleaned_dict:
+            adding = True
+            for word in stopwords:
+                # if __is_similar(word, item.lower()) > 0.75 or item.lower() in word or word in item.lower():
+                #     adding = False
+            adding = not tweet_handler.fuzzy_list_includes(stopwords, item) # do not add if item is in stopwords
+            if adding:
+                # k = __val_exists_in_keys(potential_nominees, item)
+                if not tweet_handler.fuzzy_list_includes(potential_nominees, item):
+                    if (type_of_award != 'name' and item not in name_dict[currentyr]) or (type_of_award == 'name' and item in name_dict[currentyr]):
+                        potential_nominees[item] = uncleaned_dict[item]
+                else:
+                    potential_nominees[k] += uncleaned_dict[item]
+        c = Counter(potential_nominees)
+
+        # Cutoff:
+        nom_counts = c.most_common(len(c))
+        if potential_nominees:  # if we have potential noms
+            max = nom_counts[0][1]  # get the max mentions for nom
+            noms = []
+            for potential_nom in nom_counts:
+                if potential_nom[1] > (cut * max):  # cutoff is different for people vs movie awards, see above
+                    noms.append(potential_nom[0])
+            if len(noms) > 0:
+                nominees[award] = noms
+            else:
+                nominees[award] = ['no one']  # want to scrap this line
+        else:
+            nominees[award] = ["_nom_"]
+    print("NOMINEES: " + str(nominees)) if DEBUG else 0
+    __predicted_nominees = nominees
     return nominees
 
 def get_winner(year):
@@ -93,6 +137,14 @@ def get_presenters(year):
     '''Presenters is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
+    official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
+
+    found_presenters = {}
+    presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
+
+    for award in official_awards:
+        pass
+
     # Your code here
     return presenters
 
@@ -116,6 +168,7 @@ def main():
     yearly_tweets = get_tweets_from_file(year)
     get_hosts(year)
     get_awards(year)
+    get_nominees(year)
     return
 
 if __name__ == '__main__':
