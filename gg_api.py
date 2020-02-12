@@ -46,7 +46,8 @@ def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
-    global RESULTS
+    global RESULTS, YEARLY_TWEETS
+    YEARLY_TWEETS = get_tweets_from_file(year)
     host_tweets = tweet_handler.get_host_tweets(YEARLY_TWEETS)
     names = imdb_handler.get_names(host_tweets, use_imdb_database=False)
     hosts = tweet_handler.get_most_common_names(names, variance=50)
@@ -57,7 +58,11 @@ def get_hosts(year):
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
-    global AWARD_MAPPING
+    global AWARD_MAPPING, CURRENT_YEAR_OFFICIAL_AWARDS
+    if year is '2013' or year is '2015':
+        CURRENT_YEAR_OFFICIAL_AWARDS = OFFICIAL_AWARDS_1315
+    else:
+        CURRENT_YEAR_OFFICIAL_AWARDS = OFFICIAL_AWARDS_1819
     tweet_handler = helpers.TweetHandler()
     awards_tweets = tweet_handler.get_awards_tweets(YEARLY_TWEETS)
     awards = tweet_handler.process_awards_tweets(YEARLY_TWEETS, awards_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
