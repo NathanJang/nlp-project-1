@@ -16,7 +16,6 @@ OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - mu
 CURRENT_YEAR_OFFICIAL_AWARDS = []
 YEARLY_TWEETS = []
 AWARD_MAPPING = {}
-__predicted_nominees = {}
 
 # dictionary with all of our located values
 RESULTS = {}
@@ -69,7 +68,7 @@ def get_nominees(year):
     '''Nominees is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change
     the name of this function or what it returns.'''
-    global __predicted_nominees
+    global RESULTS
     nominees = {}
     stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter', 'goldenglobes']
     tweet_handler = helpers.TweetHandler()
@@ -99,7 +98,7 @@ def get_nominees(year):
         c = Counter(potential_nominees)
 
         nominees[award] = list(c.keys())
-    __predicted_nominees = nominees
+    RESULTS['nominees'] = nominees
     return nominees
 
 
@@ -110,7 +109,7 @@ def get_winner(year):
     global RESULTS
     winners = {}
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
-        winners[award] = __predicted_nominees[award][0]
+        winners[award] = RESULTS['nominees'][award][0]
     RESULTS['winners'] = winners
     return winners
 
