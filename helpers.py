@@ -151,6 +151,47 @@ class IMDBHandler:
       print('Unable to retrieve data set file.')
       raise Exception(f'IDMB file could not be downloaded. Status code: {data_response.status_code}')
 
+
+class ResultsHandler:
+  def __init__(self, official_awards):
+    self.official_awards = official_awards
+
+  def print_results(self, hosts=[], nominees={}, winners={}, presenters={}):
+    results = ""
+    # display hosts
+    results += "Hosts: " if len(hosts) > 1 else "Host: "
+    for host in hosts:
+      results += f'{host}, '
+    results = results[:-2] + "\n\n"
+
+    # Awards
+    for i in range(len(self.official_awards)):
+      award = self.official_awards[i]
+      results += f'Award: {award}\n'
+      results += "Presenters: "
+      for presenter in presenters[award]:
+        results += f'{presenter}, '
+      results = results[:-2] + "\n"
+
+      results += "Nominees: "
+      for nominee in nominees[award]:
+        results += f'{nominee}, '
+      results = results[:-2] + "\n"
+
+      results += f'Winner: {winners[award]}\n\n'
+
+    return results
+
+  def json_results(self, hosts=[], nominees={}, winners={}, presenters={}):
+    json_output = {'hosts': hosts, 'award_data': {}}
+    for award in self.official_awards:
+      json_output['award_data'][award] = {
+        'presenters': presenters[award],
+        'nominees': nominees[award],
+        'winner': winners[award]
+      }
+    return json_output
+
 # def test_idmb():
 #   cls = IMDBHandler()
 #   data_file_content = str(gzip.open(cls.dataset_file_name).read())

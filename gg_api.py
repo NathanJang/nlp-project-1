@@ -92,6 +92,14 @@ def get_presenters(year):
     '''Presenters is a dictionary with the hard coded award
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
+    official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
+
+    found_presenters = {}
+    presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
+
+    for award in official_awards:
+
+
     # Your code here
     return presenters
 
