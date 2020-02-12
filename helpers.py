@@ -49,6 +49,39 @@ class TweetHandler:
 
     return cleaned_tweets
 
+  def get_nominee_tweets(self, tweets):
+    nominees_matching_string = '[A-z\s]+'
+    nomination_match = 'nomin(at(e[sd]?|ing)|ees?)'
+    other_matching_string = '.*^((?!(goes|but|is)).)*$'
+    pattern_before = re.compile(nomination_match + '\s+' + nominees_matching_string, re.IGNORECASE)
+    pattern_after = re.compile(nominees_matching_string + '\s+' + nomination_match, re.IGNORECASE)
+    nominee_tweets = []
+    # cleaned_tweets = []
+    for tweet in tweets:
+      results_searching_before = pattern_before.search(tweet)
+      results_searching_after = pattern_after.search(tweet)
+      if results_searching_before:
+        # nominee_tweets.append(results_searching_before.group(0))
+        nominee_tweets.append(tweet)
+      elif results_searching_after:
+        # nominee_tweets.append(results_searching_after.group(0))
+        nominee_tweets.append(tweet)
+    # regex_matching_pattern = re.compile(other_matching_string)
+    # for tweet in awards_tweets:
+    #   if regex_matching_pattern.match(tweet):
+    #     cleaned_tweets.append(regex_matching_pattern.match(tweet).group(0).lower())
+
+    return nominee_tweets
+    # relevant_tweets = []
+    # for tweet in tweets:
+    #   adder = False
+    #   for match in award_mapping[award]:
+    #     if match.lower() in tweet.lower() or match.lower()[0:int(len(match.lower()) / 2)] in tweet.lower():
+    #       adder = True
+    #   if adder:
+    #     relevant_tweets.append(tweet)
+    # return relevant_tweets
+
   def process_awards_tweets(self, tweets, cleaned_tweets, nlp_client, official_awards):
     awards_len = len(official_awards)
     matching_intersection_threshold = 3
@@ -96,15 +129,19 @@ class TweetHandler:
     # hacky but removes any non-names by seeing if their split length is 1
     return [host for host in found_hosts if len(host.split(' ')) > 1]
 
-  word_similarity_factor = lambda lhs, rhs: SequenceMatcher(None, lhs, rhs).ratio()
+  word_similarity_factor = lambda self, lhs, rhs: SequenceMatcher(None, lhs, rhs).ratio()
 
   def fuzzy_list_includes(self, a_list, v):
-    '''Returns whether v is in a_list with some fuzziness margin.'''
-    return any(
-      self.word_similarity_factor(existing.lower(), v.lower()) >= 0.66
-      or existing.lower() in v.lower()
-      or v.lower() in existing.lower()
-      for existing in a_list
+    '''If v is in a_list (with some fuzziness margin), return the existing value in the list, or None if none.'''
+    return next(
+      (
+        existing
+        for existing in a_list
+        if self.word_similarity_factor(existing.lower(), v.lower()) >= 0.66
+        or existing.lower() in v.lower()
+        or v.lower() in existing.lower()
+      ),
+      None
     )
 
 class IMDBHandler:
@@ -225,13 +262,13 @@ class TweetTokenizer:
     for keyword in self.keywords:
       self.award_tokens.add(keyword)
 
-  def get_relevant_words(self, tweets, type, yearly_tweets):
+  def get_relevant_words(self, tweets, type):
     words = {}
     name_pattern = re.compile(self.patterns['name'])
     for tweet in tweets:
-      if yearly_tweets[tweet] is None:
-        yearly_tweets[tweet] = self.nlp(tweet).ents
-      for ent in yearly_tweets[tweet]:
+      # if yearly_tweets[tweet] is None:
+      #   yearly_tweets[tweet] = self.nlp(tweet).ents
+      for ent in self.nlp(tweet).ents:
         if ent.label_ in ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']:
           continue
         cleaned_entity = ent.text.strip()

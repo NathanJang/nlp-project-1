@@ -69,62 +69,34 @@ def get_nominees(year):
     the name of this function or what it returns.'''
     global __predicted_nominees
     nominees = {}
-    stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter']
+    stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter', 'goldenglobes']
     tweet_handler = helpers.TweetHandler()
-    award_mapping = tweet_handler.process_awards_tweets([], YEARLY_TWEETS, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
+    nominee_tweets = tweet_handler.get_nominee_tweets(YEARLY_TWEETS)
+    award_mapping = tweet_handler.process_awards_tweets([], nominee_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
-        print("Searching for nominees for award %s in year %s" % (award, year))
-        # if award needs a person as a result (actor/actress/director/etc)
+        # some awards are people vs works of art
         type_of_award = ""
-        cut = 0.15
         if "actor" in award or "actress" in award or "director" in award or "cecil" in award:
             type_of_award = "name"
             cut = 0.3
-        # reduce to tweets about the desired award
-        relevant_tweets = []
-        for tweet in YEARLY_TWEETS:
-            adder = False
-            for match in award_mapping[award]:
-                if match.lower() in tweet.lower() or match.lower()[0:int(len(match.lower()) / 2)] in tweet.lower():
-                    adder = True
-            if adder:
-                relevant_tweets.append(tweet)
+        # filter for this award only
+        relevant_tweets = award_mapping[award]
         potential_nominees = {}
-        uncleaned_dict = {}
         if type_of_award == "name":
-            uncleaned_dict = nlp_tokenizer(relevant_tweets, 'PERSON', year)
+            uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'PERSON')
         else:
-            uncleaned_dict = nlp_tokenizer(relevant_tweets, 'WORK_OF_ART', year)
+            uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'WORK_OF_ART')
 
         for item in uncleaned_dict:
-            adding = True
-            for word in stopwords:
-                # if __is_similar(word, item.lower()) > 0.75 or item.lower() in word or word in item.lower():
-                #     adding = False
-            adding = not tweet_handler.fuzzy_list_includes(stopwords, item) # do not add if item is in stopwords
-            if adding:
-                # k = __val_exists_in_keys(potential_nominees, item)
-                if not tweet_handler.fuzzy_list_includes(potential_nominees, item):
-                    if (type_of_award != 'name' and item not in imdb_handler.names) or (type_of_award == 'name' and item in imdb_handler.names):
-                        potential_nominees[item] = uncleaned_dict[item]
-                else:
-                    potential_nominees[k] += uncleaned_dict[item]
+            if not tweet_handler.fuzzy_list_includes(stopwords, item): # do not add if item is in stopwords:
+                existing_val = tweet_handler.fuzzy_list_includes(potential_nominees, item)
+                if existing_val:
+                    potential_nominees[existing_val] += uncleaned_dict[item]
+                elif (type_of_award != 'name' and item not in imdb_handler.names) or (type_of_award == 'name' and item in imdb_handler.names):
+                    potential_nominees[item] = uncleaned_dict[item]
         c = Counter(potential_nominees)
 
-        # Cutoff:
-        nom_counts = c.most_common(len(c))
-        if potential_nominees:  # if we have potential noms
-            max = nom_counts[0][1]  # get the max mentions for nom
-            noms = []
-            for potential_nom in nom_counts:
-                if potential_nom[1] > (cut * max):  # cutoff is different for people vs movie awards, see above
-                    noms.append(potential_nom[0])
-            if len(noms) > 0:
-                nominees[award] = noms
-            else:
-                nominees[award] = ['no one']  # want to scrap this line
-        else:
-            nominees[award] = ["_nom_"]
+        nominees[award] = list(c.keys())
     __predicted_nominees = nominees
     return nominees
 
@@ -182,6 +154,7 @@ def main():
 
     get_hosts(year)
     get_awards(year)
+    get_nominees(year)
     return
 
 if __name__ == '__main__':
