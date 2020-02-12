@@ -1,3 +1,5 @@
+from difflib import SequenceMatcher
+
 import pandas as pd
 import numpy as np
 import spacy
@@ -94,6 +96,16 @@ class TweetHandler:
     # hacky but removes any non-names by seeing if their split length is 1
     return [host for host in found_hosts if len(host.split(' ')) > 1]
 
+  word_similarity_factor = lambda lhs, rhs: SequenceMatcher(None, lhs, rhs).ratio()
+
+  def fuzzy_list_includes(self, a_list, v):
+    '''Returns whether v is in a_list with some fuzziness margin.'''
+    return any(
+      self.word_similarity_factor(existing.lower(), v.lower()) >= 0.66
+      or existing.lower() in v.lower()
+      or v.lower() in existing.lower()
+      for existing in a_list
+    )
 
 class IMDBHandler:
   def __init__(self):
@@ -122,6 +134,7 @@ class IMDBHandler:
           continue
         names.append(person)
 
+    self.names = names
     return names
 
   def get_imdb_data(self):
