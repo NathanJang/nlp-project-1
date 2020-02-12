@@ -123,6 +123,9 @@ class TweetHandler:
     # get most common names using a Counter
     count = Counter(names)
     common_hosts = count.most_common(len(count))
+    if not common_hosts:
+      return found_hosts
+
     top_mentioned_host = common_hosts[0][1]
     for host in common_hosts:
       if host[1] > (top_mentioned_host * variance_factor):
@@ -146,6 +149,7 @@ class TweetHandler:
       ),
       None
     )
+
 
 class IMDBHandler:
   def __init__(self):
@@ -290,6 +294,27 @@ class TweetTokenizer:
               words[cleaned_entity] += 1
             else:
               words[cleaned_entity] = 1
+    return words
+
+  def get_presenters(self, tweets, award, winners):
+    words = {}
+    for tweet in tweets:
+      for ent in self.nlp(tweet).ents:
+        cleaned_entity = ent.text.strip()
+        if str(cleaned_entity).lower().startswith("rt"):
+          continue
+        if str(cleaned_entity).lower() in winners[award][0].lower():
+          continue
+        ents = self.nlp_tokenizer(cleaned_entity)
+        tokens = set()
+        for token in ents:
+          tokens.add(str(token).lower())
+        intersect = tokens.intersection(self.award_tokens)
+        if len(intersect) < int(len(tokens) / 2) or len(intersect) == 0:
+          if cleaned_entity in words:
+            words[cleaned_entity] += 1
+          else:
+            words[cleaned_entity] = 1
     return words
 
 # def test_idmb():
