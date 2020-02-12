@@ -50,22 +50,24 @@ class TweetHandler:
     return cleaned_tweets
 
   def get_nominee_tweets(self, tweets):
-    nominees_matching_string = '[A-z\s]+'
-    nomination_match = 'nomin(at(e[sd]?|ing)|ees?)'
+    # nominees_matching_string = '[A-z\s]+'
+    return tweets
+    '''
+    nomination_match = 'nomin(at(e[sd]?|ing|ion)|ees?)'
     other_matching_string = '.*^((?!(goes|but|is)).)*$'
-    pattern_before = re.compile(nomination_match + '\s+' + nominees_matching_string, re.IGNORECASE)
-    pattern_after = re.compile(nominees_matching_string + '\s+' + nomination_match, re.IGNORECASE)
+    pattern_before = re.compile(nomination_match, re.IGNORECASE)
+    # pattern_after = re.compile(nominees_matching_string + '\s+' + nomination_match, re.IGNORECASE)
     nominee_tweets = []
     # cleaned_tweets = []
     for tweet in tweets:
       results_searching_before = pattern_before.search(tweet)
-      results_searching_after = pattern_after.search(tweet)
+      # results_searching_after = pattern_after.search(tweet)
       if results_searching_before:
         # nominee_tweets.append(results_searching_before.group(0))
         nominee_tweets.append(tweet)
-      elif results_searching_after:
+      # elif results_searching_after:
         # nominee_tweets.append(results_searching_after.group(0))
-        nominee_tweets.append(tweet)
+        # nominee_tweets.append(tweet)
     # regex_matching_pattern = re.compile(other_matching_string)
     # for tweet in awards_tweets:
     #   if regex_matching_pattern.match(tweet):
@@ -81,6 +83,7 @@ class TweetHandler:
     #   if adder:
     #     relevant_tweets.append(tweet)
     # return relevant_tweets
+    '''
 
   def process_awards_tweets(self, tweets, cleaned_tweets, nlp_client, official_awards):
     awards_len = len(official_awards)

@@ -70,16 +70,19 @@ def get_nominees(year):
     global RESULTS
     nominees = {}
     stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter', 'goldenglobes']
-    nominee_tweets = tweet_handler.get_nominee_tweets(YEARLY_TWEETS)
-    award_mapping = tweet_handler.process_awards_tweets([], nominee_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
+    tweet_handler = helpers.TweetHandler()
+    # nominee_tweets = tweet_handler.get_nominee_tweets(YEARLY_TWEETS)
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
+        relevant_tweets = [
+            tweet for tweet in YEARLY_TWEETS
+            if award.lower()[0:len(award) // 2] in tweet.lower()
+        ]
         # some awards are people vs works of art
         type_of_award = ""
         if "actor" in award or "actress" in award or "director" in award or "cecil" in award:
             type_of_award = "name"
             cut = 0.3
         # filter for this award only
-        relevant_tweets = award_mapping[award]
         potential_nominees = {}
         if type_of_award == "name":
             uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'PERSON')
@@ -179,9 +182,7 @@ def main():
 
     get_hosts(year)
     get_awards(year)
-    get_nominees(year)
-    get_winner(year)
-    get_presenters(year)
+    n = get_nominees(year)
     return
 
 if __name__ == '__main__':
