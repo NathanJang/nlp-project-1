@@ -15,7 +15,7 @@ OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - mu
 # TODO: CHANGE VARIABLE NAMES (maybe move into dict?)
 CURRENT_YEAR_OFFICIAL_AWARDS = []
 YEARLY_TWEETS = []
-award_mapping = {}
+AWARD_MAPPING = {}
 __predicted_nominees = {}
 
 # dictionary with all of our located values
@@ -55,11 +55,11 @@ def get_hosts(year):
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
-    global award_mapping
+    global AWARD_MAPPING
     tweet_handler = helpers.TweetHandler()
     awards_tweets = tweet_handler.get_awards_tweets(YEARLY_TWEETS)
     awards = tweet_handler.process_awards_tweets(YEARLY_TWEETS, awards_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
-    award_mapping = awards
+    AWARD_MAPPING = awards
     # todo: split awards from awards mapping
     return awards
 
@@ -69,7 +69,6 @@ def get_nominees(year):
     the name of this function or what it returns.'''
     global __predicted_nominees
     nominees = {}
-    currentyr = str(int(year) - 1)
     stopwords = ['winner', 'this year', 'could win', 'tonight', 'next year\'s', 'next year', 'http', '@', 'rt', 'tweet', 'twitter']
     tweet_handler = helpers.TweetHandler()
     award_mapping = tweet_handler.process_awards_tweets([], YEARLY_TWEETS, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
@@ -143,17 +142,16 @@ def get_presenters(year):
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
     official_awards = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
-
+    
     found_presenters = {}
     presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
 
     for award in official_awards:
         for tweet in YEARLY_TWEETS:
-            for a in award_mapping[award]:
+            for a in AWARD_MAPPING[award]:
                 match = None
                 if a.lower() in tweet.lower():
                     match = presenter_pattern.search(tweet)
-
 
     return presenters
 
