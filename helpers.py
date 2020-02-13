@@ -210,42 +210,40 @@ class IMDBHandler:
 
 
 class ResultsHandler:
-  def __init__(self, official_awards):
-    self.official_awards = official_awards
 
-  def print_results(self, hosts=[], nominees={}, winners={}, presenters={}):
+  def print_results(self, found_results, official_awards):
     results = ""
     # display hosts
-    results += "Hosts: " if len(hosts) > 1 else "Host: "
-    for host in hosts:
+    results += "Hosts: " if len(found_results['hosts']) > 1 else "Host: "
+    for host in found_results['hosts']:
       results += f'{host}, '
     results = results[:-2] + "\n\n"
 
     # Awards
-    for i in range(len(self.official_awards)):
-      award = self.official_awards[i]
+    for i in range(len(official_awards)):
+      award = official_awards[i]
       results += f'Award: {award}\n'
       results += "Presenters: "
-      for presenter in presenters[award]:
+      for presenter in found_results['presenters'][award]:
         results += f'{presenter}, '
       results = results[:-2] + "\n"
 
       results += "Nominees: "
-      for nominee in nominees[award]:
+      for nominee in found_results['nominees'][award]:
         results += f'{nominee}, '
       results = results[:-2] + "\n"
 
-      results += f'Winner: {winners[award]}\n\n'
+      results += f'Winner: {found_results["winners"][award]}\n\n'
 
     return results
 
-  def json_results(self, hosts=[], nominees={}, winners={}, presenters={}):
-    json_output = {'hosts': hosts, 'award_data': {}}
-    for award in self.official_awards:
+  def json_results(self, found_results, official_awards):
+    json_output = {'hosts': found_results['hosts'], 'award_data': {}}
+    for award in official_awards:
       json_output['award_data'][award] = {
-        'presenters': presenters[award],
-        'nominees': nominees[award],
-        'winner': winners[award]
+        'presenters': found_results['presenters'][award],
+        'nominees': found_results['nominees'][award],
+        'winner': found_results['winners'][award]
       }
     return json_output
 
