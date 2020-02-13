@@ -27,7 +27,7 @@ nlp_tokenizer = Tokenizer(nlp_client.vocab)
 tweet_tokenizer = helpers.TweetTokenizer(nlp_client, nlp_tokenizer)
 imdb_handler = helpers.IMDBHandler()
 tweet_handler = helpers.TweetHandler()
-
+output_handler = helpers.ResultsHandler()
 
 def get_tweets_from_file(year):
     '''Parses a json file of tweets to extract tweet text data.
@@ -168,7 +168,7 @@ def main():
     what it returns.'''
     global YEARLY_TWEETS, CURRENT_YEAR_OFFICIAL_AWARDS
     year = '2013'
-    if len(sys.argv) >= 1:
+    if len(sys.argv) > 1:
         year = sys.argv[1]
     print(f'Year is {year}.')
     CURRENT_YEAR_OFFICIAL_AWARDS = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
@@ -179,7 +179,10 @@ def main():
     get_hosts(year)
     get_awards(year)
     n = get_nominees(year)
-    get_presenters(year)
+    get_winner(year)
+    # get_presenters(year)
+    RESULTS['presenters'] = {award: [] for award in CURRENT_YEAR_OFFICIAL_AWARDS}
+    output_handler.print_results(RESULTS, CURRENT_YEAR_OFFICIAL_AWARDS)
     return
 
 if __name__ == '__main__':
