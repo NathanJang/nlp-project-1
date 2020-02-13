@@ -4,9 +4,9 @@ import helpers
 import json
 import spacy
 from spacy.tokenizer import Tokenizer
-import en_core_web_sm
 from collections import Counter
 import re
+import sys
 
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
@@ -56,7 +56,7 @@ def get_hosts(year):
 def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
-    global AWARD_MAPPING, CURRENT_YEAR_OFFICIAL_AWARDS
+    global AWARD_MAPPING, CURRENT_YEAR_OFFICIAL_AWARDS, RESULTS
     if year is '2013' or year is '2015':
         CURRENT_YEAR_OFFICIAL_AWARDS = OFFICIAL_AWARDS_1315
     else:
@@ -65,6 +65,7 @@ def get_awards(year):
     awards_tweets = tweet_handler.get_awards_tweets(YEARLY_TWEETS)
     awards = tweet_handler.process_awards_tweets(YEARLY_TWEETS, awards_tweets, nlp_client, CURRENT_YEAR_OFFICIAL_AWARDS)
     AWARD_MAPPING = awards
+    RESULTS['awards'] = AWARD_MAPPING
     # todo: split awards from awards mapping
     return awards
 
@@ -89,11 +90,7 @@ def get_nominees(year):
             cut = 0.3
         # filter for this award only
         potential_nominees = {}
-        if type_of_award == "name":
-            uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'PERSON')
-        else:
-            uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'WORK_OF_ART')
-
+        uncleaned_dict = tweet_tokenizer.get_relevant_words(relevant_tweets, 'human') if type_of_award == "name" else tweet_tokenizer.get_relevant_words(relevant_tweets, 'art')
         for item in uncleaned_dict:
             if not tweet_handler.fuzzy_list_includes(stopwords, item): # do not add if item is in stopwords:
                 existing_val = tweet_handler.fuzzy_list_includes(potential_nominees, item)
@@ -127,10 +124,9 @@ def get_presenters(year):
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
     global RESULTS
-
+    pattern = 'present[^a][\w]*\s([\w]+\s){1,5}'
+    presenter_pattern = re.compile(pattern)
     found_presenters = {}
-    presenter_pattern = re.compile('present[^a][\w]*\s([\w]+\s){1,5}')
-
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
         awards_tweets = []
         for tweet in YEARLY_TWEETS:
@@ -154,8 +150,6 @@ def get_presenters(year):
             presenter_counter = Counter(presenter_list)
             if len(presenter_counter.most_common(1)):
                 found_presenters[award] = [pres[0] for pres in presenter_counter.most_common(2) if pres]
-            else:
-                found_presenters[award] = ['_pre_'] # todo: what????
 
     RESULTS['presenters'] = found_presenters
     return found_presenters
@@ -176,18 +170,19 @@ def main():
     run when grading. Do NOT change the name of this function or
     what it returns.'''
     global YEARLY_TWEETS, CURRENT_YEAR_OFFICIAL_AWARDS
-    year = '2013' # todo
+    year = '2013'
+    if len(sys.argv) >= 1:
+        year = sys.argv[1]
+    print(f'Year is {year}.')
     CURRENT_YEAR_OFFICIAL_AWARDS = OFFICIAL_AWARDS_1315 if int(year) in [2013, 2015] else OFFICIAL_AWARDS_1819
     YEARLY_TWEETS = get_tweets_from_file(year)
-
-    # todo: move this, maybe into nominations?
     # add awards to tokenizer
     tweet_tokenizer.add_tokens_from_awards(CURRENT_YEAR_OFFICIAL_AWARDS)
     tweet_tokenizer.add_tokens_from_keywords()
-
     get_hosts(year)
     get_awards(year)
     n = get_nominees(year)
+    get_presenters(year)
     return
 
 if __name__ == '__main__':

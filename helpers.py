@@ -253,9 +253,10 @@ class ResultsHandler:
 class TweetTokenizer:
   def __init__(self, nlp_client, nlp_tokenizer):
     self.patterns = {'name': '[A-Z][a-z]*\s[\w]+'}
-    self.keywords = {'ceremony': ["#", "goldenglobes", "golden", "globes", "#goldenglobes"],
-                     'category': {"PERSON": ["actor", "actress", "director", "cecil"]}}
-    self.stopwords = ['this year', 'tonight']
+    self.keywords = {'ceremony': ["#", "goldenglobes", "golden", "globes", "#goldenglobes", "GOLDEN", "GLOBES"],
+                     'category': {"PERSON": ["actor", "director", "actress", "cecil"]}}
+    self.stopwords = ['this year', 'tonight', 'yesterday']
+    self.labels = ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']
     self.nlp = nlp_client
     self.nlp_tokenizer = nlp_tokenizer
     self.award_tokens = set()
@@ -276,14 +277,14 @@ class TweetTokenizer:
       # if yearly_tweets[tweet] is None:
       #   yearly_tweets[tweet] = self.nlp(tweet).ents
       for ent in self.nlp(tweet).ents:
-        if ent.label_ in ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']:
+        if ent.label_ in self.labels:
           continue
         cleaned_entity = ent.text.strip()
         if cleaned_entity.lower() in self.stopwords:
           continue
-        if type == 'PERSON' and name_pattern.match(cleaned_entity) is None:
+        if type == 'human' and name_pattern.match(cleaned_entity) is None:
           continue
-        if (type == 'PERSON' and ent.label_ == 'PERSON') or type == 'WORK_OF_ART':
+        if (type == 'human' and ent.label_ == 'human') or type == 'art':
           ents = self.nlp_tokenizer(cleaned_entity)
           tokens = set()
           for token in ents:
@@ -298,6 +299,7 @@ class TweetTokenizer:
 
   def get_presenters(self, tweets, award, winners):
     words = {}
+    tweets = list(set(tweets))
     for tweet in tweets:
       for ent in self.nlp(tweet).ents:
         cleaned_entity = ent.text.strip()
