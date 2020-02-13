@@ -233,8 +233,10 @@ class ResultsHandler:
         results += f'{nominee}, '
       results = results[:-2] + "\n"
 
-      results += f'Winner: {found_results["winners"][award]}\n\n'
-
+      if award in found_results['winners']:
+        results += f'Winner: {found_results["winners"][award]}\n\n'
+      else:
+        results += f'Winner: N/A\n\n'
     return results
 
   def json_results(self, found_results, official_awards):

@@ -178,11 +178,12 @@ def main():
     tweet_tokenizer.add_tokens_from_keywords()
     get_hosts(year)
     get_awards(year)
-    n = get_nominees(year)
+    get_nominees(year)
     get_winner(year)
     # get_presenters(year)
     RESULTS['presenters'] = {award: [] for award in CURRENT_YEAR_OFFICIAL_AWARDS}
-    output_handler.print_results(RESULTS, CURRENT_YEAR_OFFICIAL_AWARDS)
+    our_results = output_handler.print_results(RESULTS, CURRENT_YEAR_OFFICIAL_AWARDS)
+    print(our_results)
     return
 
 if __name__ == '__main__':
