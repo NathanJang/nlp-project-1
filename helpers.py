@@ -209,42 +209,42 @@ class IMDBHandler:
 
 
 class ResultsHandler:
-  def __init__(self, official_awards):
-    self.official_awards = official_awards
 
-  def print_results(self, hosts=[], nominees={}, winners={}, presenters={}):
+  def print_results(self, found_results, official_awards):
     results = ""
     # display hosts
-    results += "Hosts: " if len(hosts) > 1 else "Host: "
-    for host in hosts:
+    results += "Hosts: " if len(found_results['hosts']) > 1 else "Host: "
+    for host in found_results['hosts']:
       results += f'{host}, '
     results = results[:-2] + "\n\n"
 
     # Awards
-    for i in range(len(self.official_awards)):
-      award = self.official_awards[i]
+    for i in range(len(official_awards)):
+      award = official_awards[i]
       results += f'Award: {award}\n'
       results += "Presenters: "
-      for presenter in presenters[award]:
+      for presenter in found_results['presenters'][award]:
         results += f'{presenter}, '
       results = results[:-2] + "\n"
 
       results += "Nominees: "
-      for nominee in nominees[award]:
+      for nominee in found_results['nominees'][award]:
         results += f'{nominee}, '
       results = results[:-2] + "\n"
 
-      results += f'Winner: {winners[award]}\n\n'
-
+      if award in found_results['winners']:
+        results += f'Winner: {found_results["winners"][award]}\n\n'
+      else:
+        results += f'Winner: N/A\n\n'
     return results
 
-  def json_results(self, hosts=[], nominees={}, winners={}, presenters={}):
-    json_output = {'hosts': hosts, 'award_data': {}}
-    for award in self.official_awards:
+  def json_results(self, found_results, official_awards):
+    json_output = {'hosts': found_results['hosts'], 'award_data': {}}
+    for award in official_awards:
       json_output['award_data'][award] = {
-        'presenters': presenters[award],
-        'nominees': nominees[award],
-        'winner': winners[award]
+        'presenters': found_results['presenters'][award],
+        'nominees': found_results['nominees'][award],
+        'winner': found_results['winners'][award]
       }
     return json_output
 
@@ -252,9 +252,10 @@ class ResultsHandler:
 class TweetTokenizer:
   def __init__(self, nlp_client, nlp_tokenizer):
     self.patterns = {'name': '[A-Z][a-z]*\s[\w]+'}
-    self.keywords = {'ceremony': ["#", "goldenglobes", "golden", "globes", "#goldenglobes"],
-                     'category': {"PERSON": ["actor", "actress", "director", "cecil"]}}
-    self.stopwords = ['this year', 'tonight']
+    self.keywords = {'ceremony': ["#", "goldenglobes", "golden", "globes", "#goldenglobes", "GOLDEN", "GLOBES"],
+                     'category': {"PERSON": ["actor", "director", "actress", "cecil"]}}
+    self.stopwords = ['this year', 'tonight', 'yesterday']
+    self.labels = ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']
     self.nlp = nlp_client
     self.nlp_tokenizer = nlp_tokenizer
     self.award_tokens = set()
@@ -275,20 +276,20 @@ class TweetTokenizer:
       # if yearly_tweets[tweet] is None:
       #   yearly_tweets[tweet] = self.nlp(tweet).ents
       for ent in self.nlp(tweet).ents:
-        if ent.label_ in ['ORDINAL', 'CARDINAL', 'QUANTITY', 'MONEY', 'DATE', 'TIME']:
+        if ent.label_ in self.labels:
           continue
         cleaned_entity = ent.text.strip()
         if cleaned_entity.lower() in self.stopwords:
           continue
-        if type == 'PERSON' and name_pattern.match(cleaned_entity) is None:
+        if type == 'human' and name_pattern.match(cleaned_entity) is None:
           continue
-        if (type == 'PERSON' and ent.label_ == 'PERSON') or type == 'WORK_OF_ART':
+        if (type == 'human' and ent.label_ == 'human') or type == 'art':
           ents = self.nlp_tokenizer(cleaned_entity)
-          tokens = set()
+          words_tokens = set()
           for token in ents:
-            tokens.add(str(token).lower())
-          intersect = tokens.intersection(self.award_tokens)
-          if len(intersect) < int(len(tokens) / 2) or len(intersect) == 0:
+            words_tokens.add(str(token).lower())
+          intersect = words_tokens.intersection(self.award_tokens)
+          if len(intersect) < int(len(words_tokens) / 2) or len(intersect) == 0:
             if cleaned_entity in words:
               words[cleaned_entity] += 1
             else:
@@ -297,33 +298,32 @@ class TweetTokenizer:
 
   def get_presenters(self, tweets, award, winners):
     words = {}
+    tweets = list(set(tweets)) # remove duplicate tweets
     for tweet in tweets:
       for ent in self.nlp(tweet).ents:
         cleaned_entity = ent.text.strip()
-        if str(cleaned_entity).lower().startswith("rt"):
+        if str(cleaned_entity).lower().startswith("rt") or str(cleaned_entity).lower() in winners[award][0].lower():
           continue
-        if str(cleaned_entity).lower() in winners[award][0].lower():
-          continue
+        pres_tokens = set()
         ents = self.nlp_tokenizer(cleaned_entity)
-        tokens = set()
-        for token in ents:
-          tokens.add(str(token).lower())
-        intersect = tokens.intersection(self.award_tokens)
-        if len(intersect) < int(len(tokens) / 2) or len(intersect) == 0:
+        for pres_tokens in ents:
+          pres_tokens.add(str(pres_tokens).lower())
+        intersect = pres_tokens.intersection(self.award_tokens)
+        if len(intersect) < int(len(pres_tokens) / 2) or len(intersect) == 0:
           if cleaned_entity in words:
             words[cleaned_entity] += 1
           else:
             words[cleaned_entity] = 1
     return words
 
-# def test_idmb():
-#   cls = IMDBHandler()
-#   data_file_content = str(gzip.open(cls.dataset_file_name).read())
-#   data_file_content = data_file_content.split('\\n')
-#   split_file_content = [row.split('\\t') for row in data_file_content]
-#   column_names = split_file_content[0]
-#   idmb_df = pd.DataFrame(split_file_content, columns=column_names)
-#   idmb_df.drop(column_names[4:], axis=1, inplace=True)
-#   print(idmb_df.head)
+def test_idmb():
+  cls = IMDBHandler()
+  data_file_content = str(gzip.open(cls.dataset_file_name).read())
+  data_file_content = data_file_content.split('\\n')
+  split_file_content = [row.split('\\t') for row in data_file_content]
+  column_names = split_file_content[0]
+  idmb_df = pd.DataFrame(split_file_content, columns=column_names)
+  idmb_df.drop(column_names[4:], axis=1, inplace=True)
+  print(idmb_df.head)
 
 # test_idmb()
