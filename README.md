@@ -11,7 +11,7 @@ Install dependencies:
 Tweet data should be stored in the project root with the filename `gg{year}.json`.
 
 ## Running
-- `python gg_api.py`
+- `python gg_api.py {year}`
 
 ## Notes
 It seems like our solution for `get_presenters` is incomplete and times out. However, the rest of the functions do not
