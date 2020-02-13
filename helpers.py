@@ -286,11 +286,11 @@ class TweetTokenizer:
           continue
         if (type == 'human' and ent.label_ == 'human') or type == 'art':
           ents = self.nlp_tokenizer(cleaned_entity)
-          tokens = set()
+          words_tokens = set()
           for token in ents:
-            tokens.add(str(token).lower())
-          intersect = tokens.intersection(self.award_tokens)
-          if len(intersect) < int(len(tokens) / 2) or len(intersect) == 0:
+            words_tokens.add(str(token).lower())
+          intersect = words_tokens.intersection(self.award_tokens)
+          if len(intersect) < int(len(words_tokens) / 2) or len(intersect) == 0:
             if cleaned_entity in words:
               words[cleaned_entity] += 1
             else:
@@ -299,34 +299,32 @@ class TweetTokenizer:
 
   def get_presenters(self, tweets, award, winners):
     words = {}
-    tweets = list(set(tweets))
+    tweets = list(set(tweets)) # remove duplicate tweets
     for tweet in tweets:
       for ent in self.nlp(tweet).ents:
         cleaned_entity = ent.text.strip()
-        if str(cleaned_entity).lower().startswith("rt"):
+        if str(cleaned_entity).lower().startswith("rt") or str(cleaned_entity).lower() in winners[award][0].lower():
           continue
-        if str(cleaned_entity).lower() in winners[award][0].lower():
-          continue
+        pres_tokens = set()
         ents = self.nlp_tokenizer(cleaned_entity)
-        tokens = set()
-        for token in ents:
-          tokens.add(str(token).lower())
-        intersect = tokens.intersection(self.award_tokens)
-        if len(intersect) < int(len(tokens) / 2) or len(intersect) == 0:
+        for pres_tokens in ents:
+          pres_tokens.add(str(pres_tokens).lower())
+        intersect = pres_tokens.intersection(self.award_tokens)
+        if len(intersect) < int(len(pres_tokens) / 2) or len(intersect) == 0:
           if cleaned_entity in words:
             words[cleaned_entity] += 1
           else:
             words[cleaned_entity] = 1
     return words
 
-# def test_idmb():
-#   cls = IMDBHandler()
-#   data_file_content = str(gzip.open(cls.dataset_file_name).read())
-#   data_file_content = data_file_content.split('\\n')
-#   split_file_content = [row.split('\\t') for row in data_file_content]
-#   column_names = split_file_content[0]
-#   idmb_df = pd.DataFrame(split_file_content, columns=column_names)
-#   idmb_df.drop(column_names[4:], axis=1, inplace=True)
-#   print(idmb_df.head)
+def test_idmb():
+  cls = IMDBHandler()
+  data_file_content = str(gzip.open(cls.dataset_file_name).read())
+  data_file_content = data_file_content.split('\\n')
+  split_file_content = [row.split('\\t') for row in data_file_content]
+  column_names = split_file_content[0]
+  idmb_df = pd.DataFrame(split_file_content, columns=column_names)
+  idmb_df.drop(column_names[4:], axis=1, inplace=True)
+  print(idmb_df.head)
 
 # test_idmb()
