@@ -296,25 +296,26 @@ class TweetTokenizer:
               words[cleaned_entity] = 1
     return words
 
-  def get_presenters(self, tweets, award, winners):
+  def get_presenters_tokens(self, tweets, award, winners):
     words = {}
     tweets = list(set(tweets)) # remove duplicate tweets
     for tweet in tweets:
       for ent in self.nlp(tweet).ents:
         cleaned_entity = ent.text.strip()
-        if str(cleaned_entity).lower().startswith("rt") or str(cleaned_entity).lower() in winners[award][0].lower():
+        if str(cleaned_entity).lower().startswith("rt") or (winners[award] and str(cleaned_entity).lower() in winners[award][0].lower()):
           continue
-        pres_tokens = set()
+        presenter_token_set = set()
         ents = self.nlp_tokenizer(cleaned_entity)
-        for pres_tokens in ents:
-          pres_tokens.add(str(pres_tokens).lower())
-        intersect = pres_tokens.intersection(self.award_tokens)
-        if len(intersect) < int(len(pres_tokens) / 2) or len(intersect) == 0:
+        for pres_token in ents:
+          presenter_token_set.add(str(pres_token).lower())
+        intersect = presenter_token_set.intersection(self.award_tokens)
+        if len(intersect) < int(len(presenter_token_set) / 2) or len(intersect) == 0:
           if cleaned_entity in words:
             words[cleaned_entity] += 1
           else:
             words[cleaned_entity] = 1
     return words
+
 
 def test_idmb():
   cls = IMDBHandler()
