@@ -50,8 +50,7 @@ class TweetHandler:
 
   def get_nominee_tweets(self, tweets):
     # nominees_matching_string = '[A-z\s]+'
-    return tweets
-    '''
+    # return tweets
     nomination_match = 'nomin(at(e[sd]?|ing|ion)|ees?)'
     other_matching_string = '.*^((?!(goes|but|is)).)*$'
     pattern_before = re.compile(nomination_match, re.IGNORECASE)
@@ -82,7 +81,6 @@ class TweetHandler:
     #   if adder:
     #     relevant_tweets.append(tweet)
     # return relevant_tweets
-    '''
 
   def process_awards_tweets(self, tweets, cleaned_tweets, nlp_client, official_awards):
     awards_len = len(official_awards)
@@ -113,6 +111,10 @@ class TweetHandler:
         max_index = matrix[i].index(max(matrix[i]))
         if matrix[i][max_index] > matching_intersection_threshold:
             award_mapping[official_awards[max_index]].append(cleaned_tweets[i])
+
+    # remove duplicates
+    for key, val in award_mapping.items():
+      award_mapping[key] = list(set(val))
 
     return award_mapping
 
