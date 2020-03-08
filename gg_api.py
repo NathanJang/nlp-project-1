@@ -6,6 +6,7 @@ import spacy
 from spacy.tokenizer import Tokenizer
 from collections import Counter
 import re
+import random
 import sys
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
@@ -141,9 +142,10 @@ def get_presenters(year):
     pattern = 'present[^a][\w]*\s([\w]+\s){1,5}'
     presenter_pattern = re.compile(pattern)
     found_presenters = {}
+    sample_size = int(len(YEARLY_TWEETS)/5)
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
         awards_tweets = []
-        for tweet in YEARLY_TWEETS:
+        for tweet in random.sample(YEARLY_TWEETS, sample_size):
             lower_tweet = tweet.lower()
             for a in AWARD_MAPPING[award]:
                 text_match = None
