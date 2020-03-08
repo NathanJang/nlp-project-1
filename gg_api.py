@@ -142,9 +142,8 @@ def get_presenters(year):
     pattern = 'present[^a][\w]*\s([\w]+\s){1,5}'
     presenter_pattern = re.compile(pattern)
     found_presenters = {}
-    sample_size = int(len(YEARLY_TWEETS)/5)
     # override sample size max
-    sample_size = 250000
+    sample_size = max(300000, int(len(YEARLY_TWEETS)/5))
     tweets_to_analyze = YEARLY_TWEETS if len(YEARLY_TWEETS) < sample_size else random.sample(YEARLY_TWEETS, sample_size)
     for award in CURRENT_YEAR_OFFICIAL_AWARDS:
         awards_tweets = []
